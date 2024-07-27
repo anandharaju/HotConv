@@ -1,0 +1,20 @@
+
+#                          GPU IMPLEMENTATION
+
+variant                    : proposed      # OPTIONS: [malconv/malconv2/proposed]
+epochs                     : 1
+early_stopping_patience    : 100
+max_len                    : 2097152  # 1048576        # (in bytes - powers of 2) 268435456 bytes = 256 MB
+batch_size                 : 256  # 128
+num_filters                : 256
+dpath                      : ../data/
+dataset                    : bodmas_f94_timed
+binaries_location          : /path/to/binaries/
+topk                       : 2              # Top-k Accuracy
+learning_rate              : 0.0001
+num_workers                : 8
+window_size                : 512            # (in bytes) Convolution kernel size
+stride                     : 512            # (in bytes) Convolution stride
+gpu_id                     : 3              # -1 for cpu only testing
+fp_slice_size              : 8192           # (in bytes) 512 <= window size <= byte length of the largest file
+fp2_slice_size             : MIN            
