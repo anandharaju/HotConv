@@ -118,6 +118,9 @@ Training time may reduce when dedicated GPU/RAM/hard disk is used instead of usi
 
 ### Common Errors:
 
+* The PyTorch's unpool operation has an open issue that it may throw "ValueError: invalid output_size "(XXX,)" (dim 0 must be between 0 and YYY)", when a very low window size (or stride) is used from the current setting. 
+  To mitigate, reduce the FP slice size (in powers of 2).
+  
 * Note that the submitted code works if exact package requirements mentioned above are met (tested on NVIDIA RTX 6000 Ada).  
 Some examples of runtime errors when using different setup are given below (tested on NVIDIA GeForce 1050 and RTX 4090 with lower CUDA versions):
 
