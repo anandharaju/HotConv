@@ -4,6 +4,10 @@
 A low GPU memory footprint and energy-efficient Green-AI learning strategy for training the class of 1D CNNs with temporal-max pooling layer, such as the state-of-the-art malware detection CNN, MalConv. 
 HotConv reduces the GPU memory footprint by harnessing the sparsity of relevant activations and gradients at the temporal max pooling layer without trading off model capacity. 
 
+<p align="center">
+<img src="https://github.com/Anonymous-conference-202x/HotConv/blob/main/hotconv.gif?raw=true" width="400" align="center"/>
+</p>
+
 A comparison of HotConv, HotConv-$_{Eco}$ (a variant of HotConv) and MalConv2 (the existing memory-efficient version of MalConv) is provided below:
 
 <p align="center">
