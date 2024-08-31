@@ -6,7 +6,7 @@ HotConv reduces the GPU memory footprint by harnessing the sparsity of relevant 
 
 <p align="center">
 <img src="https://github.com/Anonymous-conference-202x/HotConv/blob/main/hotconv.gif" width="400" align="center"/>
-![hotconv.gif](https://github.com/anandharaju/HotConv/blob/master/hotconv.gif)
+![hotconv.gif](hotconv.gif)
 </p>
 
 
