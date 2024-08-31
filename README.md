@@ -6,10 +6,10 @@ HotConv reduces the GPU memory footprint by harnessing the sparsity of relevant 
 
 <p align="center">
 <img src="https://github.com/Anonymous-conference-202x/HotConv/blob/main/hotconv.gif" width="400" align="center"/>
-![hotconv.gif](hotconv.gif)
+
 </p>
 
-
+![hotconv.gif](hotconv.gif)
 
 A comparison of HotConv, HotConv-$_{Eco}$ (a variant of HotConv) and MalConv2 (the existing memory-efficient version of MalConv) is provided below:
 
