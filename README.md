@@ -9,7 +9,8 @@ HotConv reduces the GPU memory footprint by harnessing the sparsity of relevant 
 
 </p>
 
-![DataLoading.mp4](DataLoading.mp4)
+<video src="DataLoading.mp4" controls="controls" style="max-width: 730px;">
+</video>
 
 ![hotconv.gif](hotconv.gif)
 
