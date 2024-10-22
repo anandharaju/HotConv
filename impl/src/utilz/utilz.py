@@ -182,34 +182,14 @@ class Util():
                with open(args.binaries_location + _file, 'rb') as f:
                     x = f.read(min(args.max_len, flen))
                     x = np.frombuffer(x, dtype=np.uint8)
-                    # x = np.concatenate([x, np.asarray([0] * (args.max_len - len(x)))])
-                    # x = x.astype(np.int16)
-                    #x = x.astype(LONG)
                     x = torch.tensor(x, dtype=torch.int16) + 1
-                    
-                    '''
-                    if len(x) % args.fp_slice_size != 0:
-                        residue = args.fp_slice_size - (len(x) % args.fp_slice_size)
-                        x = F.pad(x, (0, residue), value=0)
-                    '''
-                    
-                    # x = torch.tensor(x)
-                    # label = torch.tensor([label])
                     corpus[_file] = x  #{'x': x, 'y': label}
             except Exception as e:
                 print("Error in Picklify", str(e))
-            
 
             fsize = os.stat(args.binaries_location + _file).st_size
             tot_size += fsize
 
-            '''
-            if id % 1000 == 0:
-                # Intermediate Save pickled corpus
-                corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
-                with open(corpus_path, "wb") as pt1handle:
-                    pickle.dump(corpus, pt1handle)
-            '''
         # Save pickled corpus
         corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
         with open(corpus_path, "wb") as pt1handle:
@@ -240,35 +220,12 @@ class Util():
                with open(args.binaries_location + _file, 'rb') as f:
                     x = f.read(min(args.max_len, flen))
                     x = np.frombuffer(x, dtype=np.uint8)
-                    # x = np.concatenate([x, np.asarray([0] * (args.max_len - len(x)))])
-                    # x = x.astype(np.int16)
-                    #x = x.astype(LONG)
                     x = torch.tensor(x, dtype=torch.int16) + 1
-                    # print(len(x))
-                    
-                    '''
-                    if len(x) % args.fp_slice_size != 0:
-                        residue = args.fp_slice_size - (len(x) % args.fp_slice_size)
-                        x = F.pad(x, (0, residue), value=0)
-                    '''
-
-                    #x = torch.tensor(x)
-                    # label = torch.tensor([label])
                     corpus[_file] = x  #{'x': x, 'y': label}
             except Exception as e:
                 print("Error in Picklify", str(e))
-            
-
             fsize = os.stat(args.binaries_location + _file).st_size
             tot_size += fsize
-
-            '''
-            if id % 1000 == 0:
-                # Intermediate Save pickled corpus
-                corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
-                with open(corpus_path, "wb") as pt1handle:
-                    pickle.dump(corpus, pt1handle)
-            '''
         # Save pickled corpus
         corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
         with open(corpus_path, "wb") as pt1handle:

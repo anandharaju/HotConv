@@ -50,16 +50,13 @@ def train_malconv2(malconv, exe_input, label, args, ghandle):
     losst = time.time()
     loss = args.loss_fn(outputs, label)
     args.time_loss += time.time() - losst
-    # print("Loss time:", time.time()-fp2t)
-    
+
     xt = time.time()
     loss.backward()
-    # print("M2 BP  time:", time.time()-xt)
     args.time_bp += time.time() - xt
     
     xt = time.time()
     args.adam_optim.step()
-    # print("M2 Opt time:", time.time()-xt)
     args.time_optim += time.time() - xt
     
     ot = time.time()
@@ -81,13 +78,10 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     malconv.fp_slice_size = args.fp_slice_size
     outputs, fcache = malconv(exe_input, ghandle)
     args.time_fp += time.time() - fpt
-    # print("FP time:", time.time() - fpt)
 
     xt = time.time()
     batch_blocks = malconv.gather_hot_blocks(fcache, exe_input)
-    #print("Hot block time:", time.time() - xt)
     args.time_hot += time.time() - xt
-    #print("FP + Hot block time:", time.time()-fpt)
     args.time_fp_hot += time.time() - fpt
     
     '''
@@ -107,8 +101,7 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     losst = time.time()
     loss = args.loss_fn(outputs, label)
     args.time_loss += time.time() - losst
-    #print("FP2 + loss calc time:", time.time()-fp2t)
-    
+
     ot = time.time()
     _, predicted = torch.max(outputs.data, 1)
     with torch.no_grad():
@@ -125,14 +118,10 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     xt = time.time()
     loss.backward()
     args.time_dense_bp += time.time()-xt
-    #print("Dense BP time:", time.time()-xt)
-    
+
     xt = time.time()
     malconv.backprop_selective_gradient_attribution(args.adam_optim, fcache, batch_blocks, ghandle)
     args.time_conv_bp += time.time()-xt
-    #print("Dense BP + Conv BP + OPT  time:", time.time()-xt)
-    
-    # args.time_bp += time.time() - xt
     del fcache
             
     return args
@@ -192,56 +181,22 @@ def run(args, fold, util, ghandle, cvres):
         lt = time.time()
         tlt = time.time()
 
-        '''if epoch % 2 == 0:
-            # Load smaller files
-        else:
-            # Load larger files
-            args.dataloader.dataset.corpus_ram
-            args.seqdataset_train.all_files''' 
-                                               
         for batch_data in tqdm.tqdm(args.dataloader):
             if args.subloader_batch_size >= args.batch_size:
                 exe_input = batch_data[0]
                 label = batch_data[1].to(args.device)
-            '''else:
-                if itr == 0:
-                    exe_input = batch_data[0]
-                    label = batch_data[1].to(args.device)
-                    itr += 1
-                    continue
-                else:
-                    exe_input, label = args.seqdataset_train.concat_var_len_batches(exe_input, label, batch_data, args.device, args.batch_padding)
-                    itr += 1
-                    if itr == args.batch_size / args.subloader_batch_size:
-                        itr = 0
-                    else:
-                        continue'''
-            
-            '''print("1", exe_input.shape, len(exe_input[0]) % args.window_size)
-            exe_input = exe_input.long()
-            if len(exe_input[0]) % args.window_size != 0:
-              residue = args.window_size - (len(exe_input[0]) % args.window_size)
-              exe_input = F.pad(exe_input, (0, residue), value=0)
-            print("2", exe_input.shape, len(exe_input[0]) % args.window_size)'''
-
-            #print("1", exe_input.shape, len(exe_input[0]) % args.fp_slice_size)
             exe_input = exe_input.long()
             if len(exe_input[0]) % args.fp_slice_size != 0:
                 residue = args.fp_slice_size - (len(exe_input[0]) % args.fp_slice_size)
                 exe_input = F.pad(exe_input, (0, residue), value=0)
-            #print("2", exe_input.shape, len(exe_input[0]) % args.fp_slice_size)
 
             tbt = time.time()
             tmx = exe_input.shape[1]
-            #print(exe_input.shape[1])
             label = Variable(label[:, 0].long(), requires_grad=False)  # ***********************       bodmas  - 1
             args.adam_optim.zero_grad()
             
             lt = time.time() - lt
             args.time_load += lt
-            #if len(tbatch_times) <= 2:
-            #    print("Loading Time:", lt)
-            # tlt += lt
 
             args = train(malconv, exe_input, label, args, ghandle)
             ot = time.time()
@@ -249,7 +204,6 @@ def run(args, fold, util, ghandle, cvres):
             if len(tbatch_times) <= 5:
                 ghandle.get_gpu_usage(args.variant + ": AFTER Optimization Step")
             args.time_others += time.time() - ot
-            # print("run", time.time() - ot)
             lt = time.time()
 
         args.time_total = time.time() - tlt
@@ -327,16 +281,7 @@ def grid_run(args, ghandle):
                 if key != 'res':  # in ['res', 'val', 'tst', 'cpu_tst']:
                     print(key, ":\t", np.sum(cvres[key]) / (fold + 1), "\t+/-", np.std(cvres[key]))
 
-
         exetime = time.time() - st
-        '''
-        CPUusage = args.cpu_load_avg.mean() / psutil.cpu_count()
-        GPUusage = ghandle.get_gpu_usage_factor_()
-        cfp = carbon_footprint()
-        cfp = cfp.get_carbonEmissions(actual_runTime_hours=(exetime / (60 * 60)), usageGPU_used=GPUusage)
-        '''
-        
-        
         for key in cvres['res'].keys():
             cvres['res'][key]['avg_train_epoch_time'] = avg_train_epoch_time
             cvres['res'][key]['total_training_time'] = exetime / 60

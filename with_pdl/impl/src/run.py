@@ -38,7 +38,6 @@ def train_original(malconv, exe_input, label, args, ghandle):
     args.train_total += label.size(0)
     args.cur_batch_loss = loss.item()
     args.train_loss += outputs.shape[0] * args.cur_batch_loss  # per batch
-    #print((predicted == label).sum().item(), label.size(0), (predicted == label).sum().item()/label.size(0) * 100)
     return args
 
 
@@ -51,16 +50,13 @@ def train_malconv2(malconv, exe_input, label, args, ghandle):
     losst = time.time()
     loss = args.loss_fn(outputs, label)
     args.time_loss += time.time() - losst
-    # print("Loss time:", time.time()-fp2t)
-    
+
     xt = time.time()
     loss.backward()
-    # print("M2 BP  time:", time.time()-xt)
     args.time_bp += time.time() - xt
     
     xt = time.time()
     args.adam_optim.step()
-    # print("M2 Opt time:", time.time()-xt)
     args.time_optim += time.time() - xt
     
     ot = time.time()
@@ -82,13 +78,10 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     malconv.fp_slice_size = args.fp_slice_size
     outputs, fcache = malconv(exe_input, ghandle)
     args.time_fp += time.time() - fpt
-    # print("FP time:", time.time() - fpt)
 
     xt = time.time()
     batch_blocks = malconv.gather_hot_blocks(fcache, exe_input)
-    #print("Hot block time:", time.time() - xt)
     args.time_hot += time.time() - xt
-    #print("FP + Hot block time:", time.time()-fpt)
     args.time_fp_hot += time.time() - fpt
     
     '''
@@ -108,8 +101,7 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     losst = time.time()
     loss = args.loss_fn(outputs, label)
     args.time_loss += time.time() - losst
-    #print("FP2 + loss calc time:", time.time()-fp2t)
-    
+
     ot = time.time()
     _, predicted = torch.max(outputs.data, 1)
     with torch.no_grad():
@@ -127,14 +119,10 @@ def train_proposed(malconv, exe_input, label, args, ghandle):
     xt = time.time()
     loss.backward()
     args.time_dense_bp += time.time()-xt
-    #print("Dense BP time:", time.time()-xt)
-    
+
     xt = time.time()
     malconv.backprop_selective_gradient_attribution(args.adam_optim, fcache, batch_blocks, ghandle)
     args.time_conv_bp += time.time()-xt
-    #print("Dense BP + Conv BP + OPT  time:", time.time()-xt)
-    
-    # args.time_bp += time.time() - xt
     del fcache
             
     return args
@@ -161,11 +149,8 @@ def run(args, fold, util, ghandle, cvres):
     cur_topkacc = 0
     criteria = np.inf
     train_time = 0
-    # ghandle.get_gpu_usage("BEFORE START OF TRAINING")
     cur_patience = args.early_stopping_patience
     drill_time = {'data_load': 0, 'fp': 0, 'fp2': 0, 'hotblocks': 0, 'bp': 0}
-
-    #summary(malconv, (args.max_len,), args.batch_size, device='cuda')
 
     while not args.test_only_mode and epoch < args.epochs:
         args.time_fp = 0
@@ -196,18 +181,10 @@ def run(args, fold, util, ghandle, cvres):
         lt = time.time()
         tlt = time.time()
 
-        '''if epoch % 2 == 0:
-            # Load smaller files
-        else:
-            # Load larger files
-            args.dataloader.dataset.corpus_ram
-            args.seqdataset_train.all_files''' 
-
         num_samples_processed = args.partition_size * 3 # 0    
         args.partition_size = 256                                  
         while num_samples_processed < len(args.train_files):
             flist = args.train_files[num_samples_processed:num_samples_processed + args.partition_size]
-            # print(min(flist[:, 2]), max(flist[:, 2]))
             args = util.setDataLoader(flist, args, phase='train')
             print("-----------> Partition : ", int(num_samples_processed / args.partition_size) + 1)
             for batch_data in tqdm.tqdm(args.dataloader):
@@ -287,9 +264,6 @@ def run(args, fold, util, ghandle, cvres):
 
 
     # TESTING ######################################################################################
-    # del args.train_corpus
-    # del args.val_corpus
-    # args.seqdataset_test.corpus_ram = util.load_pickled(args.dpath+args.dataset+"/"+"test_corpus.pkl")
 
     tbatch_times, _, tst_res = validate(tbatch_times, None, args, ghandle, utilObj=util, mode='test', model=malconv)
     cvres['TestTop'+str(args.topk)+'-Acc'].append(tst_res['topkacc'])
@@ -316,14 +290,7 @@ def grid_run(args, ghandle):
 
 
         exetime = time.time() - st
-        '''
-        CPUusage = args.cpu_load_avg.mean() / psutil.cpu_count()
-        GPUusage = ghandle.get_gpu_usage_factor_()
-        cfp = carbon_footprint()
-        cfp = cfp.get_carbonEmissions(actual_runTime_hours=(exetime / (60 * 60)), usageGPU_used=GPUusage)
-        '''
-        
-        
+
         for key in cvres['res'].keys():
             cvres['res'][key]['avg_train_epoch_time'] = avg_train_epoch_time
             cvres['res'][key]['total_training_time'] = exetime / 60
@@ -366,10 +333,6 @@ def grid_run(args, ghandle):
         cpu_load = psutil.getloadavg()[2]
         CPUusage = cpu_load / psutil.cpu_count()
         GPUusage = 0
-        #cfp = carbon_footprint()
-        #cfp = cfp.get_carbonEmissions(actual_runTime_hours=(exetime / (60 * 60)), usageGPU_used=GPUusage, usageCPU_used=CPUusage)
-        # print("Carbon Footprint (Emission)", cfp / 1000, "kgCO2e")
-        #print("Execution Time:", round(exetime/60, 3), "mins", "\tCPULoadAvg [15m]:", cpu_load, "\tCPUusage", CPUusage, "\tGPUusage:", GPUusage, "\tCarbon:", cfp / 1000, "kgCO2e")
 
         cvres['res']['cpu_tst'] = cpu_tst_res
         cpu_tst_res['carbon'] = cfp

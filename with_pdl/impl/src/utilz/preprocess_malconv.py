@@ -91,61 +91,23 @@ class SeqDataset(Dataset):
             print("Data loading error - preprocess_malconv.py", str(e))
             print("This error could be related to Numpy version. Here, the version found is", np.__version__)
         return x, torch.as_tensor([y]) # torch.tensor(x), torch.tensor([y])
-    
-    '''def __getitem__(self, idx):
-        _file, y, flen, *_ = self.all_files[idx]
-        try: 
-            try:
-                with open(self.bin_loc + _file, 'rb') as f:
-                    x = f.read(min(self.max_len, flen))
-                    x = np.frombuffer(x, dtype=np.uint8)
-                    x = torch.tensor(x, dtype=torch.int16) + 1
-            except Exception as e:
-                print("Sample ", _file," not found in RAM", str(e))
-        except Exception as e:
-            print("Data loading error - preprocess_malconv.py", str(e))
-            print("This error could be related to Numpy version. Here, the version found is", np.__version__)
-        return x, torch.as_tensor([y])'''
 
     def collater(self, batch):
-        bt = time.time()
-        # random.shuffle(batch)
-        vecs = [x[0] for x in batch]     
-        # ct = time.time()
+        vecs = [x[0] for x in batch]
         vecs = torch.nn.utils.rnn.pad_sequence(vecs, batch_first=True)
-        #print(vecs.shape, "collater")
-        # print("===>", time.time() - ct)
-        # x = torch.stack([torch.cat((x[0], self.template[x[0].shape[-1]:])) for x in batch])
         y = torch.stack([x[1] for x in batch])
-        # x = torch.nn.utils.rnn.pad_sequence(vecs, batch_first=True)
-        # Below calc follows (total - avail / total) as recommended by psutil to find ram usage %
-        # 512 is the RAM capacity
-        # print('GPU IMPL - RAM_USAGE (GB):', (psutil.virtual_memory()[0]/1024**3) - (psutil.virtual_memory()[1]/1024**3) / (psutil.virtual_memory()[0]/1024**3) * 512) 
-        #print("Padding time:", time.time() - bt)
         return vecs, y
     
     def collater_new(self, batch):
         x = self.template
         for i, sample in enumerate(batch):
             x[i][:len(sample[0])] = sample[0]
-
-        #vecs = [x[0] for x in batch]     
-        # ct = time.time()
-        #vecs = torch.nn.utils.rnn.pad_sequence(vecs, batch_first=True)
-        #print(vecs.shape, "collater")
-        # print("===>", time.time() - ct)
-        # x = torch.stack([torch.cat((x[0], self.template[x[0].shape[-1]:])) for x in batch])
         y = torch.stack([x[1] for x in batch])
-        # x = torch.nn.utils.rnn.pad_sequence(vecs, batch_first=True)
-        # Below calc follows (total - avail / total) as recommended by psutil to find ram usage %
-        # 512 is the RAM capacity
-        # print('GPU IMPL - RAM_USAGE (GB):', (psutil.virtual_memory()[0]/1024**3) - (psutil.virtual_memory()[1]/1024**3) / (psutil.virtual_memory()[0]/1024**3) * 512) 
         return x, y
         end_idx = torch.nonzero(x, as_tuple=True)[1][-1].item()
         if end_idx % self.fp_slice_size != 0:
             residue = self.fp_slice_size - (end_idx % self.fp_slice_size)
             end_idx += residue
-            #print(end_idx % self.fp_slice_size)
         return x[:, :end_idx], y
         
     def concat_var_len_batches(self, exe_input, label, batch_data, device, batch_padding=True):

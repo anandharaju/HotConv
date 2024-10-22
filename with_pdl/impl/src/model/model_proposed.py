@@ -45,9 +45,6 @@ class MalConv_Proposed(nn.Module):
         self.top_slices_index = torch.zeros((self.batch_size, self.num_filters, 1), dtype=int, device=self.device)
         self.ones = torch.ones((self.batch_size, self.num_filters, 1), dtype=int, device=self.device)
 
-        #if self.fp2_slice_size != self.window_size:
-        #    self.var = torch.ones((self.batch_size * 1, self.num_filters, self.num_filters), dtype=int, device=self.device)
-        
         self.cnn2r = torch.zeros((self.batch_size, self.num_filters), device=self.device)
         self.relur = torch.zeros((self.batch_size, self.num_filters), device=self.device)
         self.sigmr = torch.zeros((self.batch_size, self.num_filters), device=self.device)
@@ -97,21 +94,21 @@ class MalConv_Proposed(nn.Module):
 
             new_max_indices = new_max_indices.view(-1, self.num_filters)
             #tracker['cnn2'] = torch.where(bool_mask, tracker['cnn2'], bool_mask)
-            tracker['cnn2r'] = torch.where(new_max_indices, 
+            tracker['cnn2r'] = torch.where(new_max_indices,
                                            torch.sum(torch.where(bool_mask, tracker['cnn2'], bool_mask), dim=2),
-                                           # torch.sum(bool_mask * tracker['cnn2'], dim=2), 
+                                           # torch.sum(bool_mask * tracker['cnn2'], dim=2),
                                            tracker['cnn2r'])
             #tracker.pop('cnn2')
             #tracker['cnn1_relu'] = torch.where(bool_mask, tracker['cnn1_relu'], bool_mask)
-            tracker['relur'] = torch.where(new_max_indices, 
+            tracker['relur'] = torch.where(new_max_indices,
                                            torch.sum(torch.where(bool_mask, cnn1, bool_mask), dim=2), 
-                                           # torch.sum(bool_mask * cnn1, dim=2), 
+                                           # torch.sum(bool_mask * cnn1, dim=2),
                                            tracker['relur'])
             #tracker.pop('cnn1_relu')
             #tracker['cnn2_sigm'] = torch.where(bool_mask, tracker['cnn2_sigm'], bool_mask)
-            tracker['sigmr'] = torch.where(new_max_indices, 
+            tracker['sigmr'] = torch.where(new_max_indices,
                                            torch.sum(torch.where(bool_mask, cnn2, bool_mask), dim=2), 
-                                           # torch.sum(bool_mask * cnn2, dim=2), 
+                                           # torch.sum(bool_mask * cnn2, dim=2),
                                            tracker['sigmr'])
             #tracker.pop('cnn2_sigm')
 
@@ -223,41 +220,21 @@ class MalConv_Proposed(nn.Module):
     # filter weights
     # ##############################################################
     def gradient_sparse_convolutions_weight(self, x, grad1, grad2, ghandle):
-        zt = time.time()
-        # print(x.shape, grad1.shape, grad2.shape)
         grad1 = grad1.view(self.batch_size, self.num_filters, 1, 1).to(self.device)
         grad2 = grad2.view(self.batch_size, self.num_filters, 1, 1).to(self.device)
         res1 = torch.zeros((self.num_filters, self.embd_dim, self.window_size), device=self.device)
         res2 = torch.zeros((self.num_filters, self.embd_dim, self.window_size), device=self.device)
-        # print("a) time:", time.time()-zt)
-        # ghandle.get_gpu_usage("1")
-        zt = time.time()
-        # fstep defines the level of parallelism.
         fstep = int(self.fp2_slice_size / self.window_size) # Num. of filters' data to process at a time ftep % self.num_filters should be 0
         for f in range(0, self.num_filters, fstep):
-            #print("\n\nb 1) time:", time.time()-zt)
-            # cur_slice_embd = x[:, :, f*self.window_size:(f+fstep)*self.window_size].to(self.device).reshape(self.batch_size, self.embd_dim, fstep, self.window_size)
             cur_slice_embd = x[:, :, f*self.window_size:(f+fstep)*self.window_size]
-            #print("b 1 1) time:", time.time()-zt)
-            #ghandle.get_gpu_usage("2")
             if self.fp2_slice_size != (self.num_filters * self.window_size):
                 cur_slice_embd = cur_slice_embd.to(self.device)
-            #ghandle.get_gpu_usage("3")
-            #print("b 1 2) time:", time.time()-zt)
             cur_slice_embd = cur_slice_embd.reshape(self.batch_size, self.embd_dim, fstep, self.window_size)
-            #print("b 1 3) time:", time.time()-zt)
-            #ghandle.get_gpu_usage("4")
-            #print("b 2) time:", time.time()-zt)
             res1[f:(f+fstep), :, :] += torch.sum(torch.moveaxis((cur_slice_embd * torch.moveaxis(grad1[:, f:(f+fstep)], 2,1)),2,1), dim=0)
-            #print("b 3) time:", time.time()-zt)
             res2[f:(f+fstep), :, :] += torch.sum(torch.moveaxis((cur_slice_embd * torch.moveaxis(grad2[:, f:(f+fstep)], 2,1)),2,1), dim=0)
-            #print("b 4) time:", time.time()-zt)
-        # print("Loop time:", time.time()-zt)
-        
-        zt = time.time()
+
         res1[f:(f+fstep), :, :] /= self.batch_size
         res2[f:(f+fstep), :, :] /= self.batch_size
-        # print("c) time:", time.time()-zt)
         return res1.to(self.device), res2.to(self.device)
 
     # ##############################################################
@@ -320,17 +297,11 @@ class MalConv_Proposed(nn.Module):
     # ****************************************************
     
     def backprop_selective_gradient_attribution(self, optim, fcache, batch_slices, ghandle=None):
-        #yt = time.time()
         grad_dense_to_pool = self.get_gradients_dense_to_pooling()
-        #print("\n\n",grad_dense_to_pool.shape)
         grad_mult_to_relur, grad_mult_to_sigmr = self.gradient_multiply(fcache['relur'], fcache['sigmr'], grad_dense_to_pool)
-        #print(grad_mult_to_relur.shape, grad_mult_to_sigmr.shape)
         grad_sigm_to_conv2r = self.gradient_sigmoid(fcache['cnn2r'], grad_mult_to_sigmr)
-        #print(grad_sigm_to_conv2r.shape)
         grad_conv1_weights, grad_conv2_weights = self.gradient_sparse_convolutions_weight(batch_slices, grad_mult_to_relur, grad_sigm_to_conv2r, ghandle)
-        #print("Conv BP time:", time.time()-yt)
-        
-        # yt = time.time()
+
         self.conv_1.weight.requires_grad = True
         self.conv_2.weight.requires_grad = True
         self.conv_1.bias.requires_grad = True
@@ -347,4 +318,3 @@ class MalConv_Proposed(nn.Module):
         self.conv_2.weight.requires_grad = False
         self.conv_1.bias.requires_grad = False
         self.conv_2.bias.requires_grad = False
-        # print("Opt time:", time.time()-yt)

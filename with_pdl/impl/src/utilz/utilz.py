@@ -123,10 +123,6 @@ class Util():
             args.train_files = pd.read_csv(args.dpath + args.dataset + "/train_"+args.dataset+"_fold_"+str(fold)+".csv", header=None).values
             args.valid_files = pd.read_csv(args.dpath + args.dataset + "/val_"+args.dataset+"_fold_"+str(fold)+".csv", header=None).values
             args.test_files = pd.read_csv(args.dpath + args.dataset + "/test_"+args.dataset+"_fold_"+str(fold)+".csv", header=None).values
-
-            # args.train_files = args.train_files.sample(frac=1).values
-            # args.valid_files = args.valid_files.sample(frac=1).values
-            # args.test_files = args.test_files.sample(frac=1).values
         except Exception as e:
             print(str(e))
             print("\n\nSample list for the fold "+str(fold)+" not found. \n\nEXITING . . .")
@@ -135,76 +131,14 @@ class Util():
         args.valid_files = args.valid_files[: len(args.valid_files) // args.batch_size * args.batch_size]
         args.test_files = args.test_files[: len(args.test_files) // args.batch_size * args.batch_size]
 
-        #args.train_files = args.train_files[: len(args.train_files) // len(args.valid_files) * len(args.valid_files)]
-        #args.valid_files = args.valid_files[: len(args.valid_files) // len(args.valid_files) * len(args.valid_files)]
-        #args.test_files = args.test_files[: len(args.test_files) // len(args.valid_files) * len(args.valid_files)]
-        
         args.train_population = len(args.train_files)
         args.valid_population = len(args.valid_files)
         args.test_population = len(args.test_files)
-        
-        
-        '''
-        st = time.time()
-    
-        
-        for phase in ['train_corpus', 'val_corpus', 'test_corpus']:
-            sst = time.time()
-            #
-            #if not os.path.exists(args.dpath + args.dataset + "/" + phase + ".pkl"):
-            #    print(args.dpath + args.dataset + "/" + phase + ".pkl")
-            #    corpus_path, corpus_pkl = self.picklify(args, phase)
-            #else:
-            #    print("Loading existing partitions...")
-            #
-            corpus_pkl = None
-            eet = time.time()
-            print("Partitioning Time:", (eet - sst)/60)
-            
-            sst = time.time()
-            if 'train' in phase:
-                #args.train_corpus = self.load_pickled(args.dpath + args.dataset + "/" + phase + ".pkl")
-                args.train_corpus = corpus_pkl
-            elif 'val' in phase:
-                #args.val_corpus = self.load_pickled(args.dpath + args.dataset + "/" + phase + ".pkl")
-                args.val_corpus  = corpus_pkl
-            else:
-                args.test_corpus = None
-                # args.test_corpus = self.load_pickled(args.dpath + args.dataset + "/" + phase + ".pkl")
-            eet = time.time()
-            print("Loading Time:", (eet - sst)/60)
-                    
-        et = time.time()
-        print("Total Partitioning + Loading Time:", (et - st)/60)
-        '''
 
-        #args.seqdataset_train = SeqDataset(args.train_files, args.max_len, args.window_size, args.fp_slice_size, args.do_truncate, batch_padding=args.batch_padding, binaries_location=args.binaries_location, batch_size=args.batch_size, corpus_ram=args.train_corpus)
-        #args.seqdataset_valid = SeqDataset(args.valid_files, args.max_len, args.window_size, args.fp_slice_size, args.do_truncate, batch_padding=args.batch_padding, binaries_location=args.binaries_location, batch_size=args.batch_size, corpus_ram=args.val_corpus)
-        #args.seqdataset_test = SeqDataset(args.test_files, args.max_len, args.window_size, args.fp_slice_size, args.do_truncate, batch_padding=args.batch_padding, binaries_location=args.binaries_location, batch_size=args.batch_size, corpus_ram=args.test_corpus)
-
-        #args.train_batch_collater = args.seqdataset_train.collater if args.batch_padding else None
-        #args.valid_batch_collater = args.seqdataset_valid.collater if args.batch_padding else None
-        #args.test_batch_collater = args.seqdataset_test.collater if args.batch_padding else None
-        
-        #shuffle = True
-        #print("SHUFFLE :", shuffle)
-        #args.dataloader = DataLoader(args.seqdataset_train, batch_size=args.subloader_batch_size, shuffle=shuffle, num_workers=args.num_workers, persistent_workers=False #True
-        #                            , collate_fn=args.train_batch_collater
-        #                            , pin_memory=False)
-        #args.validloader = DataLoader(args.seqdataset_valid, batch_size=args.subloader_batch_size, shuffle=shuffle, num_workers=args.num_workers, persistent_workers=False #True
-        #                            , collate_fn=args.valid_batch_collater
-        #                            , pin_memory=False)
-        #args.testloader = DataLoader(args.seqdataset_test, batch_size=args.subloader_batch_size, shuffle=shuffle, num_workers=args.num_workers, persistent_workers=False #True
-        #                            , collate_fn=args.test_batch_collater
-        #                            , pin_memory=False)
-    
         args.num_classes = len(np.unique(args.train_files[:, 1]))
         print("Train Files:", args.train_population, "\t\t", "Valid Files:", args.valid_population, "\t\t", "Test Files:", args.test_population
               , "\t#. classes train/val/test:", args.num_classes, len(np.unique(args.valid_files[:, 1])), len(np.unique(args.test_files[:, 1])), "\n")
 
-        #from math import gcd
-        #from functools import reduce
-        #args.partition_size = reduce(gcd, [args.train_population, args.valid_population, args.test_population])
         args.partition_size = args.test_population
         print("Partition Size set to ", args.partition_size)
 
@@ -226,7 +160,6 @@ class Util():
         return args
     
     def getPartition(self, args, flist):
-        #print("Sample count:", len(flist))
         corpus = {}
         tot_size = 0
         # LONG = np.longlong if int(np.__version__.split('.')[1]) > 20 else np.long
@@ -267,39 +200,16 @@ class Util():
                with open(args.binaries_location + _file, 'rb') as f:
                     x = f.read(min(args.max_len, flen))
                     x = np.frombuffer(x, dtype=np.uint8)
-                    # x = np.concatenate([x, np.asarray([0] * (args.max_len - len(x)))])
-                    # x = x.astype(np.int16)
-                    #x = x.astype(LONG)
                     x = torch.tensor(x, dtype=torch.int16) + 1
-                    
-                    '''
-                    if len(x) % args.fp_slice_size != 0:
-                        residue = args.fp_slice_size - (len(x) % args.fp_slice_size)
-                        x = F.pad(x, (0, residue), value=0)
-                    '''
-                    
-                    # x = torch.tensor(x)
-                    # label = torch.tensor([label])
                     corpus[_file] = x  #{'x': x, 'y': label}
             except Exception as e:
                 print("Error in Picklify", str(e))
-            
 
             fsize = os.stat(args.binaries_location + _file).st_size
             tot_size += fsize
 
-            '''
-            if id % 1000 == 0:
-                # Intermediate Save pickled corpus
-                corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
-                with open(corpus_path, "wb") as pt1handle:
-                    pickle.dump(corpus, pt1handle)
-            '''
         # Save pickled corpus
         corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
-        #with open(corpus_path, "wb") as pt1handle:
-        #    pickle.dump(corpus, pt1handle)
-
         return corpus_path, corpus
     
 
@@ -325,43 +235,20 @@ class Util():
                with open(args.binaries_location + _file, 'rb') as f:
                     x = f.read(min(args.max_len, flen))
                     x = np.frombuffer(x, dtype=np.uint8)
-                    # x = np.concatenate([x, np.asarray([0] * (args.max_len - len(x)))])
-                    # x = x.astype(np.int16)
-                    #x = x.astype(LONG)
                     x = torch.tensor(x, dtype=torch.int16) + 1
-                    # print(len(x))
-                    
-                    '''
-                    if len(x) % args.fp_slice_size != 0:
-                        residue = args.fp_slice_size - (len(x) % args.fp_slice_size)
-                        x = F.pad(x, (0, residue), value=0)
-                    '''
-
-                    #x = torch.tensor(x)
-                    # label = torch.tensor([label])
                     corpus[_file] = x  #{'x': x, 'y': label}
             except Exception as e:
                 print("Error in Picklify", str(e))
-            
 
             fsize = os.stat(args.binaries_location + _file).st_size
             tot_size += fsize
 
-            '''
-            if id % 1000 == 0:
-                # Intermediate Save pickled corpus
-                corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
-                with open(corpus_path, "wb") as pt1handle:
-                    pickle.dump(corpus, pt1handle)
-            '''
         # Save pickled corpus
         corpus_path = args.dpath + args.dataset + "/" + phase + ".pkl"
         with open(corpus_path, "wb") as pt1handle:
             pickle.dump(corpus, pt1handle)
 
         return corpus_path
-
-
 
     def load_pickled(self, corpus_path, max_len=None):
         with open(corpus_path, 'rb') as pkl:
