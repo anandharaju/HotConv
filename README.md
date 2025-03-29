@@ -1,5 +1,6 @@
 ### HotConv - Malware Detection/Classification with Low Carbon Footprints
 
+Paper: Low Carbon Footprint Training for 1D-CNNs with Temporal Max-Pooling (ACM CIKM 2024) [Click to View!](https://dl.acm.org/doi/pdf/10.1145/3627673.3679678)
 
 A low GPU memory footprint and energy-efficient Green-AI learning strategy for training the class of 1D CNNs with temporal-max pooling layer, such as the state-of-the-art malware detection CNN, MalConv. 
 HotConv reduces the GPU memory footprint by harnessing the sparsity of relevant activations and gradients at the temporal max pooling layer without trading off model capacity. 
